@@ -25,6 +25,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -122,6 +123,31 @@ find_header(const u_char *buf, size_t len, char *mode, long *partial)
 	return -1;
 }
 
+/*
+ * A header tmux (or screen) has been through: it drops the ZDLE, so the
+ * text "**B00" or "**B01" and at least ten more hex digits show instead.
+ * The transfer can't work through it (it changes the binary data both
+ * ways); the helper stops it and offers the files window instead. Where
+ * it starts, or -1.
+ */
+static long
+find_stripped_header(const u_char *buf, size_t len)
+{
+	size_t i, j;
+
+	for (i = 0; i + 16 <= len; i++) {
+		if (buf[i] != '*' || buf[i + 1] != '*' || buf[i + 2] != 'B' ||
+			buf[i + 3] != '0' || (buf[i + 4] != '0' && buf[i + 4] != '1'))
+			continue;
+		for (j = i + 5; j < i + 16; j++)
+			if (!isxdigit(buf[j]))
+				break;
+		if (j == i + 16)
+			return (long)i;
+	}
+	return -1;
+}
+
 /* The '*' padding right before the header, if it is in this buffer. */
 static long
 padding_start(const u_char *buf, long at)
@@ -153,7 +179,7 @@ start_helper(struct nt_zmodem *z, Channel *c, char mode, int padded)
 	fcntl(out[0], F_SETFD, FD_CLOEXEC);
 	argv[0] = z->helper;
 	argv[1] = "--zmodem";
-	argv[2] = mode == '0' ? "download" : "upload";
+	argv[2] = mode == '0' ? "download" : mode == '1' ? "upload" : "tmux";
 	argv[3] = NULL;
 	if (posix_spawn_file_actions_init(&actions) != 0 ||
 	    posix_spawn_file_actions_adddup2(&actions, in[0], STDIN_FILENO) != 0 ||
@@ -325,6 +351,15 @@ nt_zmodem_outfilter(struct ssh *ssh, Channel *c, u_char **data, size_t *dlen)
 	if (z->broken || len == 0)
 		return buf;
 	at = find_header(buf, len, &mode, &partial);
+	if (at < 0 && (start = find_stripped_header(buf, len)) >= 0) {
+		if (start > 0) {
+			*dlen = (size_t)start;
+			return buf;
+		}
+		if (start_helper(z, c, 't', 1) != 0)
+			z->broken = 1;
+		return buf;
+	}
 	if (at < 0) {
 		/* hold back a header cut off at the end, until the rest comes */
 		if (partial > 0)
