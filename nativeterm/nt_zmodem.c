@@ -40,6 +40,7 @@
 #include "misc.h"
 #include "sshbuf.h"
 #include "channels.h"
+#include "nativeterm/nt_drop.h"
 #include "nativeterm/nt_zmodem.h"
 
 #ifdef WINDOWS
@@ -304,6 +305,9 @@ nt_zmodem_infilter(struct ssh *ssh, Channel *c, char *buf, int len)
 		return 0;
 	}
 	z->drop_typed_until = 0;
+	/* files dropped into the tab: Terminal pastes their names */
+	if (nt_drop_infilter(ssh, c, z->helper, buf, len))
+		return 0;
 	if (z->escape == NULL) {
 		if ((r = sshbuf_put(c->input, buf, len)) != 0)
 			fatal_fr(r, "put");
