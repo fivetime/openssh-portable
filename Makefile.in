@@ -114,7 +114,8 @@ P11OBJS= ssh-pkcs11-client.o
 SKOBJS=	ssh-sk-client.o
 
 SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
-	sshconnect.o sshconnect2.o mux.o $(P11OBJS) $(SKOBJS)
+	sshconnect.o sshconnect2.o mux.o $(P11OBJS) $(SKOBJS) \
+	nativeterm/nt_zmodem.o nativeterm/nt_drop.o
 
 SSHDOBJS=sshd.o \
 	platform-listen.o \
