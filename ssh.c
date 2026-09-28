@@ -109,6 +109,7 @@
 #include "ssherr.h"
 #include "myproposal.h"
 #include "utf8.h"
+#include "nativeterm/nt_zmodem.h"
 
 #ifdef ENABLE_PKCS11
 #include "ssh-pkcs11.h"
@@ -2300,6 +2301,28 @@ ssh_session2_open(struct ssh *ssh)
 	return c->self;
 }
 
+/*
+ * NativeTerm: what the server said it is when the connection began (its
+ * identification string, RFC 4253 4.2: "SSH-2.0-OpenSSH_9.6p1
+ * Ubuntu-3ubuntu13"), in the local command's environment. Nothing is asked
+ * of the server for it. Only where NativeTerm started this ssh
+ * ($NATIVETERM_ZMODEM, see nativeterm/nt_zmodem.c).
+ */
+static void
+nt_export_server_version(struct ssh *ssh)
+{
+	char *version;
+
+	if (nt_zmodem_helper() == NULL || ssh->kex == NULL ||
+	    ssh->kex->server_version == NULL ||
+	    sshbuf_len(ssh->kex->server_version) == 0)
+		return;
+	if ((version = sshbuf_dup_string(ssh->kex->server_version)) == NULL)
+		return;
+	setenv("NATIVETERM_SERVER_VERSION", version, 1);
+	free(version);
+}
+
 static int
 ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 {
@@ -2374,8 +2397,10 @@ ssh_session2(struct ssh *ssh, const struct ssh_conn_info *cinfo)
 
 	/* Execute a local command */
 	if (options.local_command != NULL &&
-	    options.permit_local_command)
+	    options.permit_local_command) {
+		nt_export_server_version(ssh);
 		ssh_local_cmd(options.local_command);
+	}
 
 	/*
 	 * stdout is now owned by the session channel; clobber it here
