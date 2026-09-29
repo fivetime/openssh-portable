@@ -56,6 +56,7 @@
 #include "packet.h"
 #include "sshkey.h"
 #include "sshconnect.h"
+#include "nativeterm/nt_hostkey.h"
 #include "log.h"
 #include "match.h"
 #include "misc.h"
@@ -1262,6 +1263,7 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 		 * If in "new" or "off" strict mode, add the key automatically
 		 * to the local known_hosts file.
 		 */
+ nt_add_key:
 		if (options.check_host_ip && ip_status == HOST_NEW) {
 			snprintf(hostline, sizeof(hostline), "%s,%s", host, ip);
 			hostp = hostline;
@@ -1354,6 +1356,17 @@ check_host_key(char *hostname, const struct ssh_conn_info *cinfo,
 		error("Offending %s key in %s:%lu",
 		    sshkey_type(host_found->key),
 		    host_found->file, host_found->line);
+
+		/*
+		 * NativeTerm: the person may replace the key in its window;
+		 * the old one is gone then, the new one is saved as a new
+		 * host's (nativeterm/nt_hostkey.c).
+		 */
+		if (nt_hostkey_changed(host, ip, type, host_key, host_found,
+		    options.fingerprint_hash)) {
+			hostkey_trusted = 1;
+			goto nt_add_key;
+		}
 
 		/*
 		 * If strict host key checking is in use, the user will have

@@ -115,7 +115,8 @@ SKOBJS=	ssh-sk-client.o
 
 SSHOBJS= ssh.o readconf.o clientloop.o sshtty.o \
 	sshconnect.o sshconnect2.o mux.o $(P11OBJS) $(SKOBJS) \
-	nativeterm/nt_zmodem.o nativeterm/nt_drop.o nativeterm/nt_log.o
+	nativeterm/nt_zmodem.o nativeterm/nt_drop.o nativeterm/nt_log.o \
+	nativeterm/nt_hostkey.o
 
 SSHDOBJS=sshd.o \
 	platform-listen.o \
