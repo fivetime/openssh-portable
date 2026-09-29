@@ -2263,6 +2263,12 @@ channel_handle_rfd(struct ssh *ssh, Channel *c)
 	return 1;
 }
 
+/*
+ * NativeTerm: told what a channel wrote to its local end (set by ssh for
+ * its session log, nativeterm/nt_log.c; NULL elsewhere).
+ */
+void (*nt_channel_written)(Channel *, const u_char *, size_t);
+
 static int
 channel_handle_wfd(struct ssh *ssh, Channel *c)
 {
@@ -2330,6 +2336,9 @@ channel_handle_wfd(struct ssh *ssh, Channel *c)
 		return -1;
 	}
 	channel_set_used_time(ssh, c);
+	/* NativeTerm: what the terminal got, for its session log */
+	if (nt_channel_written != NULL)
+		nt_channel_written(c, buf, (size_t)len);
 #ifndef BROKEN_TCGETATTR_ICANON
 	if (c->isatty && dlen >= 1 && buf[0] != '\r') {
 		if (tcgetattr(c->wfd, &tio) == 0 &&
@@ -2375,6 +2384,10 @@ channel_handle_efd_write(struct ssh *ssh, Channel *c)
 		debug2("channel %d: closing write-efd %d", c->self, c->efd);
 		channel_close_fd(ssh, c, &c->efd);
 	} else {
+		/* NativeTerm: what the terminal got, for its session log */
+		if (nt_channel_written != NULL)
+			nt_channel_written(c, sshbuf_ptr(c->extended),
+			    (size_t)len);
 		if ((r = sshbuf_consume(c->extended, len)) != 0)
 			fatal_fr(r, "channel %i: consume", c->self);
 		c->local_consumed += len;

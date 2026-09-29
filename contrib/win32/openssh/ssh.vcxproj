@@ -517,6 +517,7 @@
     <ClCompile Include="$(OpenSSH-Src-Path)clientloop.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)nativeterm\nt_drop.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)nativeterm\nt_zmodem.c" />
+    <ClCompile Include="$(OpenSSH-Src-Path)nativeterm\nt_log.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)readconf.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)ssh.c" />
     <ClCompile Include="$(OpenSSH-Src-Path)sshconnect.c" />

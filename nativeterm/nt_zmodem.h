@@ -25,6 +25,9 @@ unsigned char *nt_zmodem_outfilter(struct ssh *, struct Channel *,
     unsigned char **, size_t *);
 void nt_zmodem_cleanup(struct ssh *, int, void *);
 
+/* Whether the channel's data goes to the helper now (a transfer). */
+int nt_zmodem_busy(struct Channel *);
+
 /* What a helper writes last: it never appears raw in ZMODEM data (XOFF is
  * always escaped there). */
 #define NT_ZMODEM_END	"\x13\x13\x13\x13"

@@ -272,6 +272,13 @@ give_back(struct nt_zmodem *z, Channel *c)
 	debug_f("rz/sz: done");
 }
 
+int
+nt_zmodem_busy(Channel *c)
+{
+	return c->output_filter == nt_zmodem_outfilter &&
+	    c->filter_ctx != NULL && ((struct nt_zmodem *)c->filter_ctx)->active;
+}
+
 static int
 helper_gone(struct nt_zmodem *z)
 {

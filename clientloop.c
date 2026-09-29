@@ -109,6 +109,7 @@
 #include "ssherr.h"
 #include "hostfile.h"
 #include "nativeterm/nt_zmodem.h"
+#include "nativeterm/nt_log.h"
 
 /* Permitted RSA signature algorithms for UpdateHostkeys proofs */
 #define HOSTKEY_PROOF_RSA_ALGS	"rsa-sha2-512,rsa-sha2-256"
@@ -1535,6 +1536,8 @@ client_loop(struct ssh *ssh, int have_pty, int escape_char_arg,
 		enter_raw_mode(options.request_tty == REQUEST_TTY_FORCE);
 
 	if (session_ident != -1) {
+		/* NativeTerm: its session log (nativeterm/nt_log.c) */
+		nt_log_channel(session_ident);
 		/* NativeTerm: rz / sz through its helper (nativeterm/nt_zmodem.c) */
 		if (nt_zmodem_helper() != NULL) {
 			int esc = escape_char_arg != SSH_ESCAPECHAR_NONE;

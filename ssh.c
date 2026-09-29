@@ -110,6 +110,7 @@
 #include "myproposal.h"
 #include "utf8.h"
 #include "nativeterm/nt_zmodem.h"
+#include "nativeterm/nt_log.h"
 
 #ifdef ENABLE_PKCS11
 #include "ssh-pkcs11.h"
@@ -725,8 +726,10 @@ main(int ac, char **av)
 	/*
 	 * Discard other fds that are hanging around. These can cause problem
 	 * with backgrounded ssh processes started by ControlPersist.
+	 * NativeTerm: its session log's feed is kept (nativeterm/nt_log.c).
 	 */
-	closefrom(STDERR_FILENO + 1);
+	nt_log_init();
+	closefrom(nt_log_keep());
 
 	__progname = ssh_get_progname(av[0]);
 
@@ -1240,6 +1243,9 @@ main(int ac, char **av)
 	    options.log_facility == SYSLOG_FACILITY_NOT_SET ?
 	    SYSLOG_FACILITY_USER : options.log_facility,
 	    !use_syslog);
+	/* NativeTerm: ssh's messages into the session log, where asked
+	 * (from here on: reading the config already says a lot) */
+	nt_log_trace_start();
 
 	debug("%s, %s", SSH_RELEASE, SSH_OPENSSL_VERSION);
 #ifndef WINDOWS
@@ -1447,6 +1453,8 @@ main(int ac, char **av)
 
 	/* reinit */
 	log_init(argv0, options.log_level, options.log_facility, !use_syslog);
+	/* NativeTerm: ssh's messages into the session log, where asked */
+	nt_log_trace_start();
 	for (j = 0; j < options.num_log_verbose; j++) {
 		if (strcasecmp(options.log_verbose[j], "none") == 0)
 			break;
